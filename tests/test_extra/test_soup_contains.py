@@ -127,6 +127,34 @@ class TestSoupContains(util.TestCase):
             flags=util.HTML
         )
 
+    def test_contains_unclosed_quote(self):
+        """Test contains with unclosed quoted value fails for syntax error, not timeout error."""
+
+        import platform
+
+        if platform.system() == 'Windows':
+            with self.assertRaises(sv.SelectorSyntaxError):
+                sv.compile('body :-soup-contains("' + ('x' * 300))
+        else:
+            import signal
+
+            def timeout_handler(signum, frame):
+                raise TimeoutError
+
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(3)
+
+            passed = False
+            try:
+                with self.assertRaises(sv.SelectorSyntaxError):
+                    sv.compile('body :-soup-contains("' + ('x' * 300))
+                passed = True
+            except TimeoutError:
+                pass
+            finally:
+                signal.alarm(0)
+            self.assertTrue(passed)
+
     def test_contains_escapes(self):
         """Test contains with escape characters."""
 
